@@ -177,6 +177,16 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/dashboard_widget_info" />
         </receiver>
+        <receiver
+            android:name="com.nextcloud.utils.UnifiedPushUtils"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="org.unifiedpush.android.connector.MESSAGE"/>
+                <action android:name="org.unifiedpush.android.connector.UNREGISTERED"/>
+                <action android:name="org.unifiedpush.android.connector.NEW_ENDPOINT"/>
+                <action android:name="org.unifiedpush.android.connector.REGISTRATION_REFUSED"/>
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".ui.activity.UploadFilesActivity"

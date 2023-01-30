@@ -140,7 +140,7 @@ public class NotificationsActivity extends DrawerActivity implements Notificatio
                 snackbar.show();
             }
         } else {
-            String pushUrl = getResources().getString(R.string.push_server_url);
+            String pushUrl = preferences.getPushServerUrl();
 
             if (pushUrl.isEmpty()) {
                 snackbar = Snackbar.make(binding.emptyList.emptyListView,

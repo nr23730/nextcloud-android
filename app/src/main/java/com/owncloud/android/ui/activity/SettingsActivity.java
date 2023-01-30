@@ -57,6 +57,7 @@ import com.nextcloud.client.network.ClientFactory;
 import com.nextcloud.client.preferences.AppPreferences;
 import com.nextcloud.client.preferences.AppPreferencesImpl;
 import com.nextcloud.client.preferences.DarkMode;
+import com.nextcloud.utils.UnifiedPushUtils;
 import com.owncloud.android.BuildConfig;
 import com.owncloud.android.MainApp;
 import com.owncloud.android.R;
@@ -81,6 +82,9 @@ import com.owncloud.android.utils.EncryptionUtils;
 import com.owncloud.android.utils.MimeTypeUtil;
 import com.owncloud.android.utils.theme.CapabilityUtils;
 import com.owncloud.android.utils.theme.ViewThemeUtils;
+
+import org.unifiedpush.android.connector.RegistrationDialogContent;
+import org.unifiedpush.android.connector.UnifiedPush;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -337,6 +341,8 @@ public class SettingsActivity extends PreferenceActivity
 
         removeE2E(preferenceCategoryMore);
 
+        setupUnifiedPushPreference(preferenceCategoryMore);
+
         setupHelpPreference(preferenceCategoryMore);
 
         setupRecommendPreference(preferenceCategoryMore);
@@ -521,6 +527,27 @@ public class SettingsActivity extends PreferenceActivity
                 });
             }
         }
+    }
+
+    private void setupUnifiedPushPreference(PreferenceCategory preferenceCategoryMore) {
+
+        ListPreference pSetupUnifiedPush = (ListPreference) findPreference("setup_unifiedpush");
+
+        List<String> themeEntries = UnifiedPush.getDistributors(getApplicationContext(), new ArrayList<>());
+        themeEntries.add(0, getString(R.string.unifiedpush_none));
+
+        pSetupUnifiedPush.setEntries(themeEntries.toArray(new String[0]));
+        pSetupUnifiedPush.setEntryValues(themeEntries.toArray(new String[0]));
+
+        pSetupUnifiedPush.setOnPreferenceChangeListener((preference, newValue) -> {
+            if (getString(R.string.unifiedpush_none).equals((String) newValue)) {
+                UnifiedPush.unregisterApp(getApplicationContext(), "default");
+            } else {
+                UnifiedPush.saveDistributor(getApplicationContext(), (String) newValue);
+                UnifiedPush.registerApp(getApplicationContext(), "default", new ArrayList<>(), "");
+            }
+            return true;
+        });
     }
 
     private void setupHelpPreference(PreferenceCategory preferenceCategoryMore) {

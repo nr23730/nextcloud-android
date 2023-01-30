@@ -28,6 +28,7 @@ import android.content.SharedPreferences;
 import com.nextcloud.client.account.User;
 import com.nextcloud.client.account.UserAccountManager;
 import com.nextcloud.client.account.UserAccountManagerImpl;
+import com.owncloud.android.R;
 import com.owncloud.android.datamodel.ArbitraryDataProvider;
 import com.owncloud.android.datamodel.ArbitraryDataProviderImpl;
 import com.owncloud.android.datamodel.FileDataStorageManager;
@@ -77,6 +78,8 @@ public final class AppPreferencesImpl implements AppPreferences {
     private static final String PREF__KEYS_REINIT = "keysReinit";
     private static final String PREF__AUTO_UPLOAD_UPDATE_PATH = "autoUploadPathUpdate";
     private static final String PREF__PUSH_TOKEN = "pushToken";
+
+    private static final String PREF__PUSH_SERVER_URL = "pushServerUrl";
     private static final String PREF__AUTO_UPLOAD_SPLIT_OUT = "autoUploadEntriesSplitOut";
     private static final String PREF__AUTO_UPLOAD_INIT = "autoUploadInit";
     private static final String PREF__FOLDER_SORT_ORDER = "folder_sort_order";
@@ -192,6 +195,21 @@ public final class AppPreferencesImpl implements AppPreferences {
     @Override
     public String getPushToken() {
         return preferences.getString(PREF__PUSH_TOKEN, "");
+    }
+
+    @Override
+    public void setPushServerUrl(String pushServerUrl) {
+        preferences.edit().putString(PREF__PUSH_SERVER_URL, pushServerUrl).apply();
+    }
+
+    @Override
+    public String getPushServerUrl() {
+        return preferences.getString(PREF__PUSH_SERVER_URL, context.getResources().getString(R.string.push_server_url));
+    }
+
+    @Override
+    public void removePushServerUrl() {
+        preferences.edit().remove(PREF__PUSH_SERVER_URL).commit();
     }
 
     @Override
