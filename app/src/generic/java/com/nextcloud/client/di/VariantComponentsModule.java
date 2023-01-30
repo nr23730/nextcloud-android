@@ -19,8 +19,14 @@
  */
 package com.nextcloud.client.di;
 
+import com.nextcloud.utils.UnifiedPushUtils;
+
 import dagger.Module;
+import dagger.android.ContributesAndroidInjector;
 
 @Module
 abstract class VariantComponentsModule {
+    @ContributesAndroidInjector
+    abstract UnifiedPushUtils unifiedPushUtils();
+
 }

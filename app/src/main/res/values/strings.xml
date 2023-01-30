@@ -1066,4 +1066,9 @@
     <string name="setup_e2e">During setup of end-to-end encryption, you will receive a random 12 word mnemonic, which you will need to open your files on other devices. This will only be stored on this device, and can be shown again in this screen. Please note it down in a secure place!</string>
     <string name="error_showing_encryption_dialog">Error showing setup encryption dialog!</string>
     <string name="prefs_keys_exist">Add end-to-end encryption to this client</string>
+    <string name="setup_unifiedpush">UnifiedPush is an option to send push notifications without using Google Firebase
+        Cloud Messaging
+    </string>
+    <string name="prefs_setup_unifiedpush">Setup UnifiedPush</string>
+    <string name="unifiedpush_none">None</string>
 </resources>

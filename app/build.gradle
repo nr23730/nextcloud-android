@@ -367,6 +367,9 @@ dependencies {
     implementation "androidx.room:room-runtime:$roomVersion"
     kapt "androidx.room:room-compiler:$roomVersion"
 
+    // UnifiedPush
+    implementation "com.github.UnifiedPush:android-connector:2.1.1"
+
 }
 
 configurations.all {

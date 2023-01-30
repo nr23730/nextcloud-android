@@ -36,7 +36,6 @@ import com.nextcloud.client.preferences.AppPreferencesImpl
 import com.nextcloud.common.NextcloudClient
 import com.nextcloud.java.util.Optional
 import com.owncloud.android.MainApp
-import com.owncloud.android.R
 import com.owncloud.android.datamodel.ArbitraryDataProvider
 import com.owncloud.android.datamodel.ArbitraryDataProviderImpl
 import com.owncloud.android.datamodel.FileDataStorageManager
@@ -76,6 +75,31 @@ class AccountRemovalWork(
         const val TAG = "AccountRemovalJob"
         const val ACCOUNT = "account"
         const val REMOTE_WIPE = "remote_wipe"
+
+        fun unregisterPushNotifications(
+            context: Context,
+            user: User,
+            arbitraryDataProvider: ArbitraryDataProvider,
+            preferences: AppPreferences,
+            userAccountManager: UserAccountManager
+        ) {
+            val arbitraryDataPushString = arbitraryDataProvider.getValue(user, PushUtils.KEY_PUSH)
+            val pushServerUrl = preferences.pushServerUrl
+            if (!TextUtils.isEmpty(arbitraryDataPushString) && !TextUtils.isEmpty(pushServerUrl)) {
+                val gson = Gson()
+                val pushArbitraryData = gson.fromJson(
+                    arbitraryDataPushString,
+                    PushConfigurationState::class.java
+                )
+                pushArbitraryData.isShouldBeDeleted = true
+                arbitraryDataProvider.storeOrUpdateKeyValue(
+                    user.accountName,
+                    PushUtils.KEY_PUSH,
+                    gson.toJson(pushArbitraryData)
+                )
+                PushUtils.pushRegistrationToServer(userAccountManager, pushArbitraryData.getPushToken())
+            }
+        }
     }
 
     @Suppress("ReturnCount") // legacy code
@@ -102,7 +126,7 @@ class AccountRemovalWork(
             "false"
         )
         // unregister push notifications
-        unregisterPushNotifications(context, user, arbitraryDataProvider)
+        unregisterPushNotifications(context, user, arbitraryDataProvider, preferences, userAccountManager)
 
         // remove pending account removal
         arbitraryDataProvider.deleteKeyForAccount(user.accountName, ManageAccountsActivity.PENDING_FOR_REMOVAL)
@@ -154,29 +178,6 @@ class AccountRemovalWork(
         }
 
         return Result.success()
-    }
-
-    private fun unregisterPushNotifications(
-        context: Context,
-        user: User,
-        arbitraryDataProvider: ArbitraryDataProvider
-    ) {
-        val arbitraryDataPushString = arbitraryDataProvider.getValue(user, PushUtils.KEY_PUSH)
-        val pushServerUrl = context.resources.getString(R.string.push_server_url)
-        if (!TextUtils.isEmpty(arbitraryDataPushString) && !TextUtils.isEmpty(pushServerUrl)) {
-            val gson = Gson()
-            val pushArbitraryData = gson.fromJson(
-                arbitraryDataPushString,
-                PushConfigurationState::class.java
-            )
-            pushArbitraryData.isShouldBeDeleted = true
-            arbitraryDataProvider.storeOrUpdateKeyValue(
-                user.accountName,
-                PushUtils.KEY_PUSH,
-                gson.toJson(pushArbitraryData)
-            )
-            PushUtils.pushRegistrationToServer(userAccountManager, pushArbitraryData.getPushToken())
-        }
     }
 
     private fun removeSyncedFolders(context: Context, user: User, clock: Clock) {

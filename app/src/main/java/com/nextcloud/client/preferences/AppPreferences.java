@@ -65,6 +65,12 @@ public interface AppPreferences {
     void setPushToken(String pushToken);
     String getPushToken();
 
+    void setPushServerUrl(String pushServerUrl);
+
+    String getPushServerUrl();
+
+    void removePushServerUrl();
+
     boolean instantPictureUploadEnabled();
     boolean instantVideoUploadEnabled();
 
