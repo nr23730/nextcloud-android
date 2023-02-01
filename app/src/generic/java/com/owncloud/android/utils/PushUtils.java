@@ -197,6 +197,10 @@ public final class PushUtils {
         arbitraryDataProvider = new ArbitraryDataProviderImpl(MainApp.getAppContext());
 
         if (!TextUtils.isEmpty(token)) {
+            int divider = token.lastIndexOf("/");
+            String uuid = token.substring(divider + 1);
+            String base = token.substring(0, divider).replace("/push", "/gateway/nextcloud/");
+
             PushUtils.generateRsa2048KeyPair();
             String pushTokenHash = PushUtils.generateSHA512Hash(token).toLowerCase(Locale.ROOT);
             PublicKey devicePublicKey = (PublicKey) PushUtils.readKeyFromFile(true);
@@ -228,9 +232,9 @@ public final class PushUtils {
                                 getClientFor(ocAccount, context);
 
                             RemoteOperationResult remoteOperationResult =
-                                new RegisterAccountDeviceForNotificationsOperation(pushTokenHash,
+                                new RegisterAccountDeviceForNotificationsOperation(uuid.replace("-", "000000000000000000000000"),
                                                                                    publicKey,
-                                                                                   token)
+                                                                                   base)
                                     .execute(client);
 
                             if (remoteOperationResult.isSuccess()) {
