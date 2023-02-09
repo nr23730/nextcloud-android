@@ -200,9 +200,8 @@ public final class PushUtils {
     public static void pushRegistrationToServer(final UserAccountManager accountManager, final String token) {
         arbitraryDataProvider = new ArbitraryDataProviderImpl(MainApp.getAppContext());
 
-        String gateway = getGateway(token) + Base64.encodeToString(token.getBytes(), Base64.NO_WRAP);
-
         if (!TextUtils.isEmpty(token)) {
+            token += "#"; // to prevent appending /notification at the end of the path
             PushUtils.generateRsa2048KeyPair();
             String pushTokenHash = PushUtils.generateSHA512Hash(token).toLowerCase(Locale.ROOT);
             PublicKey devicePublicKey = (PublicKey) PushUtils.readKeyFromFile(true);
@@ -236,7 +235,7 @@ public final class PushUtils {
                             RemoteOperationResult remoteOperationResult =
                                 new RegisterAccountDeviceForNotificationsOperation(pushTokenHash,
                                                                                    publicKey,
-                                                                                   gateway)
+                                                                                   token)
                                     .execute(client);
 
                             if (remoteOperationResult.isSuccess()) {
@@ -267,27 +266,6 @@ public final class PushUtils {
                     }
                 }
             }
-        }
-    }
-
-    private static String getGateway(String token) {
-        String defaultGateway = "";
-        String[] path = token.split("/");
-        String uuid = path[path.length - 1];
-        String gatewayPath = "/gateway/universal/" + uuid;
-        try {
-            URL u = new URL(token);
-            String base = u.getProtocol() + "://" + u.getHost();
-
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder()
-                .url(base + gatewayPath)
-                .build();
-            Response response = client.newCall(request).execute();
-            return response.isSuccessful() && response.body().string().contains("unifiedpush") ? base + gatewayPath : defaultGateway + gatewayPath;
-
-        } catch (IOException e) {
-            return defaultGateway + gatewayPath;
         }
     }
 
