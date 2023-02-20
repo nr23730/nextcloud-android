@@ -1,18 +1,31 @@
+/*
+ * Nextcloud Android client application
+ *
+ * @author Niklas Reimer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.nextcloud.utils;
 
 import android.content.Context;
-import android.text.TextUtils;
 
 import com.google.gson.Gson;
-import com.nextcloud.client.account.User;
 import com.nextcloud.client.account.UserAccountManager;
-import com.nextcloud.client.jobs.AccountRemovalWork;
 import com.nextcloud.client.jobs.BackgroundJobManager;
 import com.nextcloud.client.jobs.NotificationWork;
 import com.nextcloud.client.preferences.AppPreferences;
-import com.owncloud.android.datamodel.ArbitraryDataProvider;
-import com.owncloud.android.datamodel.ArbitraryDataProviderImpl;
-import com.owncloud.android.datamodel.PushConfigurationState;
 import com.owncloud.android.utils.PushUtils;
 
 import org.jetbrains.annotations.NotNull;
@@ -53,32 +66,7 @@ public class UnifiedPushUtils extends MessagingReceiver {
     @Override
     public void onUnregistered(@NotNull Context context,  @NotNull String instance) {
         AndroidInjection.inject(this, context);
-        try {
-            ArbitraryDataProvider adp = new ArbitraryDataProviderImpl(context);
-            for (User u : accountManager.getAllUsers()) {
-                Thread removeOldEndpoint = new Thread(() -> AccountRemovalWork.Companion.unregisterPushNotifications(context, u, adp, preferences, accountManager));
-                removeOldEndpoint.start();
-                removeOldEndpoint.join();
-                String arbitraryDataPushString = adp.getValue(u, PushUtils.KEY_PUSH);
-                String pushServerUrl = preferences.getPushServerUrl();
-                if (!TextUtils.isEmpty(arbitraryDataPushString) && !TextUtils.isEmpty(pushServerUrl)) {
-                    Gson gson = new Gson();
-                    PushConfigurationState pushArbitraryData = gson.fromJson(
-                        arbitraryDataPushString,
-                        PushConfigurationState.class
-                                                                            );
-                    pushArbitraryData.setShouldBeDeleted(false);
-                    adp.storeOrUpdateKeyValue(
-                        u.getAccountName(),
-                        PushUtils.KEY_PUSH,
-                        gson.toJson(pushArbitraryData)
-                                             );
-                }
-            }
-            preferences.removePushServerUrl();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        PushUtils.unregister(context, accountManager, preferences);
     }
 
     @Override
