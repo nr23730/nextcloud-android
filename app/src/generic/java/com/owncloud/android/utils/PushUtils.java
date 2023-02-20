@@ -4,9 +4,12 @@
  * @author Mario Danic
  * @author Chris Narkiewicz
  * @author Tobias Kaminsky
+ * @author Niklas Reimer
  * Copyright (C) 2017-2018 Mario Danic
  * Copyright (C) 2019 Chris Narkiewicz
  * Copyright (C) 2019 Tobias Kaminsky
+ * Copyright (C) 2023 Niklas Reimer
+
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,7 +35,9 @@ import android.text.TextUtils;
 import android.util.Base64;
 
 import com.google.gson.Gson;
+import com.nextcloud.client.account.User;
 import com.nextcloud.client.account.UserAccountManager;
+import com.nextcloud.client.jobs.AccountRemovalWork;
 import com.nextcloud.client.preferences.AppPreferences;
 import com.nextcloud.client.preferences.AppPreferencesImpl;
 import com.owncloud.android.MainApp;
@@ -59,8 +64,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -75,10 +78,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Locale;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 public final class PushUtils {
 
@@ -200,9 +199,8 @@ public final class PushUtils {
     public static void pushRegistrationToServer(final UserAccountManager accountManager, final String token) {
         arbitraryDataProvider = new ArbitraryDataProviderImpl(MainApp.getAppContext());
 
-        String gateway = getGateway(token) + Base64.encodeToString(token.getBytes(), Base64.NO_WRAP);
-
         if (!TextUtils.isEmpty(token)) {
+            String tokenUrl = token + "#";
             PushUtils.generateRsa2048KeyPair();
             String pushTokenHash = PushUtils.generateSHA512Hash(token).toLowerCase(Locale.ROOT);
             PublicKey devicePublicKey = (PublicKey) PushUtils.readKeyFromFile(true);
@@ -236,7 +234,7 @@ public final class PushUtils {
                             RemoteOperationResult remoteOperationResult =
                                 new RegisterAccountDeviceForNotificationsOperation(pushTokenHash,
                                                                                    publicKey,
-                                                                                   gateway)
+                                                                                   tokenUrl)
                                     .execute(client);
 
                             if (remoteOperationResult.isSuccess()) {
@@ -267,27 +265,6 @@ public final class PushUtils {
                     }
                 }
             }
-        }
-    }
-
-    private static String getGateway(String token) {
-        String defaultGateway = "";
-        String[] path = token.split("/");
-        String uuid = path[path.length - 1];
-        String gatewayPath = "/gateway/universal/" + uuid;
-        try {
-            URL u = new URL(token);
-            String base = u.getProtocol() + "://" + u.getHost();
-
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder()
-                .url(base + gatewayPath)
-                .build();
-            Response response = client.newCall(request).execute();
-            return response.isSuccessful() && response.body().string().contains("unifiedpush") ? base + gatewayPath : defaultGateway + gatewayPath;
-
-        } catch (IOException e) {
-            return defaultGateway + gatewayPath;
         }
     }
 
@@ -496,4 +473,34 @@ public final class PushUtils {
 
         return null;
     }
+
+    public static void unregister(Context context, UserAccountManager accountManager, AppPreferences preferences) {
+        try {
+            ArbitraryDataProvider adp = new ArbitraryDataProviderImpl(context);
+            for (User u : accountManager.getAllUsers()) {
+                Thread removeOldEndpoint = new Thread(() -> AccountRemovalWork.Companion.unregisterPushNotifications(context, u, adp, preferences, accountManager));
+                removeOldEndpoint.start();
+                removeOldEndpoint.join();
+                String arbitraryDataPushString = adp.getValue(u, PushUtils.KEY_PUSH);
+                String pushServerUrl = preferences.getPushServerUrl();
+                if (!TextUtils.isEmpty(arbitraryDataPushString) && !TextUtils.isEmpty(pushServerUrl)) {
+                    Gson gson = new Gson();
+                    PushConfigurationState pushArbitraryData = gson.fromJson(
+                        arbitraryDataPushString,
+                        PushConfigurationState.class
+                                                                            );
+                    pushArbitraryData.setShouldBeDeleted(false);
+                    adp.storeOrUpdateKeyValue(
+                        u.getAccountName(),
+                        PushUtils.KEY_PUSH,
+                        gson.toJson(pushArbitraryData)
+                                             );
+                }
+            }
+            preferences.removePushServerUrl();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

@@ -75,15 +75,10 @@ import com.owncloud.android.ui.ThemeableSwitchPreference;
 import com.owncloud.android.ui.asynctasks.LoadingVersionNumberTask;
 import com.owncloud.android.ui.dialog.SetupEncryptionDialogFragment;
 import com.owncloud.android.ui.helpers.FileOperationsHelper;
-import com.owncloud.android.utils.ClipboardUtil;
-import com.owncloud.android.utils.DeviceCredentialUtils;
-import com.owncloud.android.utils.DisplayUtils;
-import com.owncloud.android.utils.EncryptionUtils;
-import com.owncloud.android.utils.MimeTypeUtil;
+import com.owncloud.android.utils.*;
 import com.owncloud.android.utils.theme.CapabilityUtils;
 import com.owncloud.android.utils.theme.ViewThemeUtils;
 
-import org.unifiedpush.android.connector.RegistrationDialogContent;
 import org.unifiedpush.android.connector.UnifiedPush;
 
 import java.util.ArrayList;
@@ -539,9 +534,14 @@ public class SettingsActivity extends PreferenceActivity
         pSetupUnifiedPush.setEntries(themeEntries.toArray(new String[0]));
         pSetupUnifiedPush.setEntryValues(themeEntries.toArray(new String[0]));
 
+        if (UnifiedPush.getDistributor(getApplicationContext()).equals("")) {
+            pSetupUnifiedPush.setValueIndex(0);
+        }
+
         pSetupUnifiedPush.setOnPreferenceChangeListener((preference, newValue) -> {
             if (getString(R.string.unifiedpush_none).equals((String) newValue)) {
                 UnifiedPush.unregisterApp(getApplicationContext(), "default");
+                PushUtils.unregister(getApplicationContext(), accountManager, preferences);
             } else {
                 UnifiedPush.saveDistributor(getApplicationContext(), (String) newValue);
                 UnifiedPush.registerApp(getApplicationContext(), "default", new ArrayList<>(), "");
